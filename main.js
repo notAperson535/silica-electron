@@ -1,14 +1,7 @@
 const { app, BrowserView, BrowserWindow, Menu, ipcMain } = require("electron");
-const os = require("os");
 const fs = require("fs").promises;
 const path = require("node:path");
-const {
-    PARAMS,
-    VALUE,
-    MicaBrowserWindow,
-    IS_WINDOWS_11,
-    WIN10,
-} = require("mica-electron");
+const { MicaBrowserWindow } = require("mica-electron");
 
 const createWindow = () => {
     let mainWindow = new MicaBrowserWindow({
@@ -28,19 +21,6 @@ const createWindow = () => {
     });
 
     mainWindow.setBackgroundMaterial("acrylic");
-
-    let browserView1 = new BrowserView({
-        webPreferences: { nodeIntegration: false },
-    });
-    let browserView2 = new BrowserView({
-        webPreferences: { nodeIntegration: false },
-    });
-    // mainWindow.addBrowserView(browserView1);
-    // mainWindow.addBrowserView(browserView2);
-    // browserView1.setBounds({ x: 0, y: 0, width: 600, height: 600 });
-    // browserView2.setBounds({ x: 600, y: 0, width: 600, height: 600 });
-    // void browserView1.webContents.loadURL("https://www.example.com");
-    // void browserView2.webContents.loadFile("index.html");
 
     if (process.platform === "darwin") {
         app.dock.setIcon(path.join(__dirname, "/assets/logo.png"));

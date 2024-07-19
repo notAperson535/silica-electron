@@ -338,12 +338,12 @@ function newTab(url) {
             savedRecommendations,
             "savedRecommendations",
         ]);
-        if (webview.canGoBack() == true) {
+        if (webview.canGoBack() === true) {
             document.querySelector("#back").classList.add("active");
         } else {
             document.querySelector("#back").classList.remove("active");
         }
-        if (webview.canGoForward() == true) {
+        if (webview.canGoForward() === true) {
             document.querySelector("#forward").classList.add("active");
         } else {
             document.querySelector("#forward").classList.remove("active");
