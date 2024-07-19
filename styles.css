@@ -1,0 +1,296 @@
+@font-face {
+    font-family: "SF Pro";
+    src: url("assets/SF-Pro.ttf") format("truetype");
+    font-weight: 100 900;
+    font-style: normal;
+}
+
+html {
+    --visionOS-background: rgba(0, 0, 0, 0.35);
+    --textColor: black;
+    --backgroundColor1: #f0f0f0;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+* {
+    font-family:
+        SF Pro,
+        Inter,
+        Segoe UI,
+        sans-serif;
+    color: white;
+    transition: 0.15s;
+}
+
+/*.visionOs::before {*/
+/*    border-radius: 15px;*/
+/*    content: "";*/
+/*    position: absolute;*/
+/*    top: 0;*/
+/*    left: 0;*/
+/*    right: 0;*/
+/*    bottom: 0;*/
+/*    border: 2px solid transparent;*/
+/*    background: linear-gradient(*/
+/*            171deg,*/
+/*            rgba(255, 255, 255, 0.4),*/
+/*            rgba(255, 255, 255, 0.01),*/
+/*            rgba(255, 255, 255, 0.1)*/
+/*        )*/
+/*        border-box;*/
+/*    mask:*/
+/*        linear-gradient(#fff 0 0, transparent 100%) padding-box,*/
+/*        linear-gradient(#fff 0 0, transparent 100%);*/
+/*    mask-composite: exclude;*/
+/*    z-index: 1;*/
+/*}*/
+
+.visionOs {
+    background: var(--visionOS-background);
+    backdrop-filter: blur(50px);
+}
+
+#topBar {
+    position: relative;
+    -webkit-app-region: drag;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    padding: 10px 5px 5px;
+}
+
+#topBar > p {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.3);
+    min-width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    -webkit-app-region: no-drag;
+    user-select: none;
+}
+
+#topBar > p.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+#topBar > p.active:hover {
+    scale: 1.025;
+    background: rgba(255, 255, 255, 0.4);
+}
+
+#topBar > p.active:active {
+    background: rgba(255, 255, 255, 0.5);
+    scale: 0.975;
+}
+
+#urlBar {
+    overflow: hidden;
+    display: flex;
+    padding: 0;
+    z-index: 1;
+    border-radius: 15px;
+    box-sizing: border-box;
+    height: 30px;
+    width: 100%;
+    margin: 0 15px;
+    background: linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.1) 0%,
+            rgba(0, 0, 0, 0.1) 100%
+        ),
+        rgba(0, 0, 0, 0.3);
+    background-blend-mode: luminosity, color-burn;
+    box-shadow:
+        0px -0.5px 1px 0px rgba(255, 255, 255, 0.3) inset,
+        0px -0.5px 1px 0px rgba(255, 255, 255, 0.25) inset,
+        1px 1.5px 4px 0px rgba(0, 0, 0, 0.08) inset,
+        1px 1.5px 4px 0px rgba(0, 0, 0, 0.1) inset;
+}
+
+#urlBar > input {
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    -webkit-app-region: no-drag;
+    outline: none;
+    border: none;
+    background: transparent;
+    box-sizing: border-box;
+    padding: 0 10px;
+    z-index: 1;
+}
+
+/* #urlBar input:focus {
+    outline: 2px solid blue;
+} */
+
+#urlRecommendations {
+    position: absolute;
+    overflow: auto;
+    display: none;
+    left: 50%;
+    transform: translate(-50%, 0%);
+    height: 250px;
+    z-index: 1;
+    top: 45px;
+    width: 75%;
+    border-radius: 15px;
+}
+
+#urlRecommendations > p {
+    margin: 0;
+    padding: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+#urlRecommendations > p.selected {
+    background: blue;
+}
+
+#tabs {
+    padding: 5px 2.5px 10px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    -webkit-app-region: drag;
+}
+
+#tabs > img {
+    position: relative;
+    width: 15px;
+    height: 15px;
+    margin: 0 5px;
+    padding: 7.5px;
+    border-radius: 5px;
+    -webkit-app-region: no-drag;
+}
+
+#tabs > img:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.tab {
+    overflow: hidden;
+    border-radius: 20px;
+    user-select: none;
+    position: relative;
+    max-width: 225px;
+    width: auto;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 0 10px;
+    margin: 0 7.5px;
+    -webkit-app-region: no-drag;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tab.active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.tab:hover {
+    scale: 1.025;
+    /*background: rgba(255, 255, 255, 0.4);*/
+}
+
+.tab:not(.active):hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.tab:active {
+    scale: 0.975;
+    /*background: rgba(255, 255, 255, 0.5);*/
+}
+
+.tab:not(.active):active {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.tab > * {
+    margin: 0 3px;
+}
+
+.tab > .favicon {
+    width: 15px;
+    height: 15px;
+}
+
+.tab > p {
+    font-size: 13px;
+    margin: 0 5px;
+    white-space: nowrap;
+    width: calc(100% - 40px);
+    overflow: hidden;
+}
+
+.tab > .close {
+    font-size: 8px;
+    width: 12.5px;
+    min-width: 12.5px;
+    height: 12.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    float: right;
+    padding: 3px;
+    z-index: 1;
+    border-radius: 15px;
+}
+
+.tab > .close:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+webview {
+    width: 100%;
+    height: calc(100% - 95px);
+    background: white;
+}
+
+#hoverLink {
+    overflow: hidden;
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    display: none;
+    width: auto;
+    min-width: 0;
+    align-items: center;
+    z-index: 2;
+    white-space: nowrap;
+    font-size: small;
+    margin: 0;
+    animation: fadein 0.65s;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+@keyframes fadein {
+    0% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
