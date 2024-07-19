@@ -62,7 +62,7 @@ body {
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    padding: 10 5px 5px;
+    padding: 10px 5px 5px;
 }
 
 #topBar > p {
