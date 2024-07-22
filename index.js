@@ -3,6 +3,8 @@ let urlBar = document.querySelector("#urlBar input");
 let tabsContainer = document.querySelector("#tabs");
 let hoverLink = document.querySelector("#hoverLink");
 let urlRecommendations = document.querySelector("#urlRecommendations");
+let alertBox = document.querySelector("#alert");
+let popupBox = document.querySelector("#popup");
 
 let tabCounter = 1;
 
@@ -12,19 +14,29 @@ let preferences = { darkMode: false };
 
 /** @namespace window.api **/
 
+// function isValidUrl(url) {
+//     if (!(url.includes("https://") || url.includes("http://"))) {
+//         url = "https://" + url;
+//     }
+//
+//     return fetch(url)
+//         .then((response) => {
+//             return response.ok;
+//         })
+//         .catch((error) => {
+//             console.error("Error:", error);
+//             return false;
+//         });
+// }
+
 function isValidUrl(url) {
     if (!(url.includes("https://") || url.includes("http://"))) {
         url = "https://" + url;
     }
-
-    return fetch(url)
-        .then((response) => {
-            return response.ok;
-        })
-        .catch((error) => {
-            console.error("Error:", error);
-            return false;
-        });
+    let res = url.match(
+        /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.\S{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.\S{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.\S{2,}|www\.[a-zA-Z0-9]+\.\S{2,})/gi
+    );
+    return res !== null;
 }
 
 function doesMatchValueInArray(term, array) {
@@ -189,7 +201,11 @@ form.onsubmit = function (event) {
     event.preventDefault();
     let webview = document.querySelector("webview.active");
     let url = form.querySelector("input").value;
-    isValidUrl(url).then((isValid) => {
+    // isValidUrl(url).then((isValid) => {
+    if (url.includes("silica://settings")) {
+        showSettings();
+    } else {
+        let isValid = isValidUrl(url);
         if (isValid) {
             if (!(url.includes("https://") || url.includes("http://"))) {
                 url = "https://" + url;
@@ -198,13 +214,18 @@ form.onsubmit = function (event) {
         } else {
             void webview.loadURL("https://google.com/search?q=" + url);
         }
-    });
-    urlBar.value = url;
-    urlRecommendations.style.display = "none";
-    urlBar.blur();
+        // });
+        urlBar.value = url;
+        urlRecommendations.style.display = "none";
+        urlBar.blur();
+    }
 };
 
+function showSettings() {}
+
 function newTab(url) {
+    let isNew = true;
+
     let tab = document.createElement("div");
     tab.classList.add("tab");
     tab.id = "tab" + tabCounter;
@@ -251,7 +272,7 @@ function newTab(url) {
     } else {
         webview.src = url;
     }
-    webview.setAttribute("allowpopups", true);
+    webview.setAttribute("allowpopups", "true");
     document.body.appendChild(webview);
 
     function onClick() {
@@ -274,6 +295,9 @@ function newTab(url) {
             urlBar.value = "";
             urlBar.focus();
         }
+        try {
+            window.api.send("newSelectedTab", webview.getWebContentsId());
+        } catch (err) {}
     }
 
     onClick();
@@ -304,13 +328,52 @@ function newTab(url) {
         }
     }
 
-    webview.addEventListener("dom-ready", function () {
-        if (!webview.src.includes("VisionTab/index.html")) {
-            tabName.textContent = webview.getTitle();
-            updateFavicon();
+    webview.addEventListener("dom-ready", async function () {
+        if (isNew) {
+            window.api.send("newTab", webview.getWebContentsId());
+            isNew = false;
+        } else {
+            window.api.send("newSelectedTab", webview.getWebContentsId());
+        }
 
-            if (webview.classList.contains("active")) {
-                urlBar.value = webview.getURL();
+        if (!webview.src.includes("VisionTab/index.html")) {
+            if (webview.src.includes("chromewebstore")) {
+                alertBox.style.display = "flex";
+                alertBox.innerHTML = "";
+
+                let p = document.createElement("p");
+                p.textContent =
+                    "Looks like you're trying to install a browser extension! To install one, you need to copy the extension url, and then paste it in the box below and hit enter";
+                alertBox.appendChild(p);
+
+                let form = document.createElement("form");
+                alertBox.appendChild(form);
+
+                let input = document.createElement("input");
+                form.appendChild(input);
+
+                webview.style.height = "calc(100% - 195px)";
+
+                form.onsubmit = function (event) {
+                    event.preventDefault();
+                    if (input.value !== "") {
+                        const url = new URL(input.value);
+                        const pathname = url.pathname;
+                        const lastPart = pathname.substring(
+                            pathname.lastIndexOf("/") + 1
+                        );
+                        console.log(lastPart);
+                        window.api.send("downloadExtension", lastPart);
+                    }
+                };
+            } else {
+                alertBox.style.display = "none";
+                tabName.textContent = webview.getTitle();
+                updateFavicon();
+
+                if (webview.classList.contains("active")) {
+                    urlBar.value = webview.getURL();
+                }
             }
         } else {
             tabName.textContent = "New tab";
@@ -430,6 +493,43 @@ document.querySelector("#forward").onclick = function (e) {
     if (e.target.classList.contains("active"))
         document.querySelector("webview.active").goForward();
 };
+
+window.api.handle(
+    "newPopup",
+    () =>
+        function (event, data) {
+            popupBox.innerHTML = "";
+            if (data === "restartBrowser") {
+                popupBox.style.display = "flex";
+
+                let icon = document.createElement("p");
+                icon.classList.add("icon");
+                icon.textContent = "􀇾";
+                popupBox.appendChild(icon);
+
+                let p = document.createElement("p");
+                p.textContent = "Please close and reopen browser to apply.";
+                popupBox.appendChild(p);
+
+                let yes = document.createElement("button");
+                yes.classList.add("active");
+                yes.textContent = "Restart browser";
+                popupBox.appendChild(yes);
+
+                let no = document.createElement("button");
+                no.textContent = "Not now";
+                popupBox.appendChild(no);
+
+                yes.onclick = function () {
+                    window.api.send("closeWindow");
+                };
+
+                no.onclick = function () {
+                    popupBox.style.display = "none";
+                };
+            }
+        }
+);
 
 window.api.handle(
     "newTab",

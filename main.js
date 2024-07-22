@@ -1,9 +1,16 @@
-const { app, BrowserView, BrowserWindow, Menu, ipcMain } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, webContents } = require("electron");
 const fs = require("fs").promises;
 const path = require("node:path");
-const { MicaBrowserWindow } = require("mica-electron");
+const { MicaBrowserWindow, IS_WINDOWS_11 } = require("mica-electron");
+const { ElectronBlocker } = require("@cliqz/adblocker-electron");
+const { fetch } = require("cross-fetch");
+const { ElectronChromeExtensions } = require("electron-chrome-extensions");
+const { buildChromeContextMenu } = require("electron-chrome-context-menu");
+const crx = require("crx-util");
 
-const createWindow = () => {
+async function createWindow() {
+    await app.whenReady();
+
     let mainWindow = new MicaBrowserWindow({
         titleBarStyle: "hidden",
         // titleBarOverlay: true,
@@ -20,9 +27,131 @@ const createWindow = () => {
         },
     });
 
-    mainWindow.setBackgroundMaterial("acrylic");
+    const extensions = new ElectronChromeExtensions({
+        session: mainWindow.webContents.session,
+        createTab(details) {
+            mainWindow.webContents.send("newTab", details.url);
+        },
+        selectTab(tab, browserWindow) {
+            // Optionally implemented for chrome.tabs.update support
+        },
+        removeTab(tab, browserWindow) {
+            // Optionally implemented for chrome.tabs.remove support
+        },
+        createWindow(details) {
+            // Optionally implemented for chrome.windows.create support
+        },
+    });
+
+    // ElectronBlocker.fromPrebuiltAdsAndTracking(fetch).then((blocker) => {
+    //     blocker.enableBlockingInSession(mainWindow.webContents.session);
+    // });
+
+    if (IS_WINDOWS_11) {
+        mainWindow.setMicaAcrylicEffect();
+    }
+
+    const manifestExists = async (dirPath) => {
+        if (!dirPath) return false;
+        const manifestPath = path.join(dirPath, "manifest.json");
+        try {
+            return (await fs.stat(manifestPath)).isFile();
+        } catch {
+            return false;
+        }
+    };
+
+    async function loadExtensions(session, extensionsPath) {
+        const subDirectories = await fs.readdir(extensionsPath, {
+            withFileTypes: true,
+        });
+
+        const extensionDirectories = await Promise.all(
+            subDirectories
+                .filter((dirEnt) => dirEnt.isDirectory())
+                .map(async (dirEnt) => {
+                    const extPath = path.join(extensionsPath, dirEnt.name);
+
+                    if (await manifestExists(extPath)) {
+                        return extPath;
+                    }
+
+                    const extSubDirs = await fs.readdir(extPath, {
+                        withFileTypes: true,
+                    });
+
+                    const versionDirPath =
+                        extSubDirs.length === 1 && extSubDirs[0].isDirectory()
+                            ? path.join(extPath, extSubDirs[0].name)
+                            : null;
+
+                    if (await manifestExists(versionDirPath)) {
+                        return versionDirPath;
+                    }
+                })
+        );
+
+        const results = [];
+
+        for (const extPath of extensionDirectories.filter(Boolean)) {
+            console.log(`Loading extension from ${extPath}`);
+            try {
+                const extensionInfo = void session.loadExtension(extPath);
+                // results.push(extensionInfo);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        return results;
+    }
+
+    await loadExtensions(
+        mainWindow.webContents.session,
+        path.join(__dirname, "./extensions")
+    );
+
+    ipcMain.handle("newTab", (args, webContentsId) => {
+        let contents = webContents.fromId(webContentsId);
+
+        const type = contents.getType();
+        const url = contents.getURL();
+        console.log(`'web-contents-created' event [type:${type}, url:${url}]`);
+
+        if (
+            process.env.SHELL_DEBUG &&
+            ["backgroundPage", "remote"].includes(contents.getType())
+        ) {
+            contents.openDevTools({ mode: "detach", activate: true });
+        }
+
+        contents.on("context-menu", (event, params) => {
+            const menu = buildChromeContextMenu({
+                params,
+                contents,
+                extensionMenuItems: extensions.getContextMenuItems(
+                    contents,
+                    params
+                ),
+                openLink: (url, disposition) => {
+                    mainWindow.webContents.send("newTab", url);
+                },
+            });
+
+            menu.popup();
+        });
+
+        extensions.addTab(contents, mainWindow);
+        extensions.selectTab(contents);
+    });
+
+    ipcMain.handle("newSelectedTab", (args, webContentsId) => {
+        let contents = webContents.fromId(webContentsId);
+        extensions.selectTab(contents);
+    });
 
     if (process.platform === "darwin") {
+        mainWindow.setVibrancy("window");
         app.dock.setIcon(path.join(__dirname, "/assets/logo.png"));
     }
 
@@ -138,11 +267,11 @@ const createWindow = () => {
         }
     }
 
-    const userDataPath = app.getPath("userData");
-
     ipcMain.handle("closeWindow", async () => {
         mainWindow.close();
     });
+
+    const userDataPath = app.getPath("userData");
 
     ipcMain.handle("writeFile", async (event, args) => {
         await writeFile(
@@ -162,13 +291,31 @@ const createWindow = () => {
         }
         return savedRecommendations;
     });
-};
 
-app.whenReady().then(() => {
-    createWindow();
+    ipcMain.handle("downloadExtension", async (event, args) => {
+        try {
+            const dir = `./extensions/${args}`;
+            const crxFilePath = `${dir}.crx`;
+            // await crx.downloadByURL(`${args}`, crxFilePath);
+            await crx.downloadById(`${args}`, "chrome", crxFilePath);
+            try {
+                await fs.access(dir);
+                await fs.rm(dir, { recursive: true, force: true });
+            } catch (err) {}
+            crx.parser.extract(crxFilePath, dir);
+            await fs.rm(crxFilePath, { force: true });
+            mainWindow.webContents.send("newPopup", "restartBrowser");
+        } catch (err) {
+            console.log(err);
+        }
+    });
+}
 
-    app.on("activate", () => {
-        if (BrowserWindow.getAllWindows().length === 0) createWindow();
+app.whenReady().then(async () => {
+    await createWindow();
+
+    app.on("activate", async () => {
+        if (BrowserWindow.getAllWindows().length === 0) await createWindow();
     });
 });
 
@@ -176,6 +323,8 @@ app.on("window-all-closed", () => {
     app.quit();
 });
 
-try {
-    require("electron-reloader")(module);
-} catch {}
+// if (process.env.NODE_ENV !== "production") {
+//     try {
+//         require("electron-reloader")(module);
+//     } catch {}
+// }

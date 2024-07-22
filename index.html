@@ -11,20 +11,22 @@
     </head>
 
     <body>
-        <div id="test"></div>
         <div id="topBar" class="visionOs">
             <p id="back">􀆉</p>
             <p id="forward">􀆊</p>
             <form id="urlBar">
                 <input type="text" placeholder="􀊫 Search or type a URL" />
             </form>
+            <browser-action-list></browser-action-list>
             <p class="active" onclick="newTab()">􀅼</p>
             <p class="active">􀐅</p>
+            <p class="active">􀍟</p>
         </div>
-        <div id="tabs" class="visionOs">
-            <!--        <img alt="New tab" src="img/new_tab.png" onclick="newTab()" />-->
-        </div>
+        <div id="tabs" class="visionOs"></div>
+        <div id="settingsPage"></div>
         <div id="urlRecommendations" class="visionOs"></div>
+        <div id="popup"></div>
+        <div id="alert"></div>
         <p id="hoverLink" class="visionOs"></p>
 
         <script src="index.js"></script>

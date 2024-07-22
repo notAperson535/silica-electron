@@ -5,3 +5,9 @@ contextBridge.exposeInMainWorld("api", {
     handle: (channel, callable, event, data) =>
         ipcRenderer.on(channel, callable(event, data)),
 });
+
+const {
+    injectBrowserAction,
+} = require("electron-chrome-extensions/dist/browser-action");
+
+injectBrowserAction();
