@@ -296,6 +296,18 @@ function newTab(url) {
             urlBar.focus();
         }
         try {
+            if (webview.canGoBack() === true) {
+                document.querySelector("#back").classList.add("active");
+            } else {
+                document.querySelector("#back").classList.remove("active");
+            }
+            if (webview.canGoForward() === true) {
+                document.querySelector("#forward").classList.add("active");
+            } else {
+                document.querySelector("#forward").classList.remove("active");
+            }
+        } catch (err) {}
+        try {
             window.api.send("newSelectedTab", webview.getWebContentsId());
         } catch (err) {}
     }
@@ -322,6 +334,9 @@ function newTab(url) {
                     "/32";
             } else {
                 favicon.src = webview.dataset.favicon;
+            }
+            if (favicon.src.includes("null")) {
+                favicon.src = "assets/logo_transparent_white.png";
             }
         } else {
             favicon.src = "assets/logo_transparent_white.png";
@@ -492,6 +507,10 @@ document.querySelector("#back").onclick = function (e) {
 document.querySelector("#forward").onclick = function (e) {
     if (e.target.classList.contains("active"))
         document.querySelector("webview.active").goForward();
+};
+
+document.querySelector("#reload").onclick = function (e) {
+    document.querySelector("webview.active").reload();
 };
 
 window.api.handle(

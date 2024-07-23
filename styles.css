@@ -6,7 +6,8 @@
 }
 
 html {
-    --visionOS-background: rgba(0, 0, 0, 0.35);
+    --visionOS-app-background: rgba(0, 0, 0, 0.35);
+    --visionOS-element-background: rgba(149, 149, 149, 0.45);
     --textColor: black;
     --backgroundColor1: #f0f0f0;
 }
@@ -28,7 +29,7 @@ body {
     transition: 0.15s;
 }
 
-/*.visionOs::before {*/
+/*.visionOS::before {*/
 /*    border-radius: 15px;*/
 /*    content: "";*/
 /*    position: absolute;*/
@@ -51,8 +52,14 @@ body {
 /*    z-index: 1;*/
 /*}*/
 
-.visionOs {
-    background-color: var(--visionOS-background);
+.app-visionOS {
+    background-color: var(--visionOS-app-background);
+    backdrop-filter: blur(50px);
+}
+
+.element-visionOS {
+    background-color: var(--visionOS-element-background);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(50px);
 }
 
@@ -209,6 +216,7 @@ form > input {
     margin: 0 7.5px;
     -webkit-app-region: no-drag;
     background-color: rgba(255, 255, 255, 0.05);
+    animation: tabAnim 0.25s;
 }
 
 .tab.active {
@@ -285,9 +293,6 @@ webview {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: rgba(149, 149, 149, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(50px);
     position: absolute;
     top: 50%;
     left: 50%;
@@ -296,6 +301,7 @@ webview {
     height: 250px;
     border-radius: 15px;
     padding: 25px;
+    animation: popupAnim 0.25s;
 }
 
 #popup > p.icon {
@@ -337,7 +343,7 @@ webview {
     bottom: 0;
     width: 100%;
     height: 100px;
-    background-color: var(--visionOS-background);
+    background-color: var(--visionOS-app-background);
     font-size: 13px;
     padding: 0px 25%;
     box-sizing: border-box;
@@ -376,5 +382,26 @@ webview {
 
     100% {
         opacity: 1;
+    }
+}
+
+@keyframes popupAnim {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes tabAnim {
+    0% {
+        width: 0;
+        padding: 0;
+    }
+    100% {
+        width: 50%;
+        padding: 0 10px;
     }
 }

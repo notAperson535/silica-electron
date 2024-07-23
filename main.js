@@ -29,7 +29,7 @@ async function createWindow() {
 
     const extensions = new ElectronChromeExtensions({
         session: mainWindow.webContents.session,
-        createTab(details) {
+        async createTab(details) {
             mainWindow.webContents.send("newTab", details.url);
         },
         selectTab(tab, browserWindow) {
