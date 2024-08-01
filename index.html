@@ -1,4 +1,4 @@
-<html lang="us" data-theme="light">
+<html lang="us">
     <head>
         <title>Silica</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -10,25 +10,51 @@
         <link rel="stylesheet" href="styles.css" />
     </head>
 
-    <body>
-        <div id="topBar" class="app-visionOS">
+    <body class="app-visionOS">
+        <div id="topBar">
+            <p id="sidebarToggle" class="active">􀏚</p>
             <p id="back">􀆉</p>
             <p id="forward">􀆊</p>
             <p id="reload" class="active">􁹠</p>
             <form id="urlBar">
-                <input type="text" placeholder="􀊫 Search or type a URL" />
+                <input
+                    aria-label="urlBar"
+                    type="text"
+                    placeholder="􀊫 Search or type a URL"
+                />
             </form>
             <browser-action-list></browser-action-list>
             <p class="active" onclick="newTab()">􀅼</p>
             <p class="active">􀐅</p>
             <p class="active">􀍟</p>
         </div>
-        <div id="tabs" class="app-visionOS"></div>
-        <div id="settingsPage"></div>
+        <div id="tabs"></div>
+        <div id="sidebar">
+            <div class="home">
+                <h2>Safari</h2>
+                <button>
+                    <p>􀉞</p>
+                    Bookmarks
+                </button>
+                <button id="openHistory">
+                    <p>􀐫</p>
+                    History
+                </button>
+            </div>
+            <div class="history"></div>
+        </div>
+        <div id="settings">
+            <div class="notFound">
+                <h1>This page does not exist</h1>
+            </div>
+            <div class="history"></div>
+        </div>
         <div id="urlRecommendations" class="element-visionOS"></div>
         <div id="popup" class="element-visionOS"></div>
         <div id="alert"></div>
-        <p id="hoverLink" class="element-visionOS"></p>
+        <div id="hoverLink" class="element-visionOS">
+            <p></p>
+        </div>
 
         <script src="index.js"></script>
     </body>

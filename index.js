@@ -10,7 +10,8 @@ let tabCounter = 1;
 
 let savedRecommendations;
 let recentlyClosed = [];
-let preferences = { darkMode: false };
+let preferences = {};
+let history = [];
 
 /** @namespace window.api **/
 
@@ -196,14 +197,10 @@ function selectCurrentRecommendation() {
     }
 }
 
-form.onsubmit = function (event) {
-    urlRecommendations.innerHTML = "";
-    event.preventDefault();
+function goToURL(url) {
     let webview = document.querySelector("webview.active");
-    let url = form.querySelector("input").value;
-    // isValidUrl(url).then((isValid) => {
-    if (url.includes("silica://settings")) {
-        showSettings();
+    if (url.includes("silica://")) {
+        showAppWindow(url);
     } else {
         let isValid = isValidUrl(url);
         if (isValid) {
@@ -214,14 +211,45 @@ form.onsubmit = function (event) {
         } else {
             void webview.loadURL("https://google.com/search?q=" + url);
         }
-        // });
-        urlBar.value = url;
-        urlRecommendations.style.display = "none";
-        urlBar.blur();
     }
+}
+
+form.onsubmit = function (event) {
+    urlRecommendations.innerHTML = "";
+    event.preventDefault();
+    goToURL(urlBar.value);
+    urlRecommendations.style.display = "none";
+    urlBar.blur();
 };
 
-function showSettings() {}
+function showAppWindow(url) {
+    document.querySelectorAll("#settings > *").forEach((el) => {
+        el.style.display = "none";
+    });
+    document.querySelector("#settings > .sidebar").style.display = "flex";
+    let window = document.querySelector(
+        "#settings > ." + url.split("silica://")[1]
+    );
+    if (window === undefined || window === null) {
+        window = document.querySelector("#settings > .notFound");
+    }
+    document.querySelector("webview.active").style.display = "none";
+    document.querySelector("#settings").style.display = "flex";
+    window.style.display = "flex";
+}
+
+function checkCanNavigate(webview) {
+    if (webview.canGoBack() === true) {
+        document.querySelector("#back").classList.add("active");
+    } else {
+        document.querySelector("#back").classList.remove("active");
+    }
+    if (webview.canGoForward() === true) {
+        document.querySelector("#forward").classList.add("active");
+    } else {
+        document.querySelector("#forward").classList.remove("active");
+    }
+}
 
 function newTab(url) {
     let isNew = true;
@@ -246,7 +274,8 @@ function newTab(url) {
     tab.appendChild(close);
     close.addEventListener("click", function (event) {
         event.stopPropagation();
-        recentlyClosed.push(webview.getURL());
+        if (!webview.getURL().includes("VisionTab/index.html"))
+            recentlyClosed.push(webview.getURL());
         window.api.send("writeFile", [recentlyClosed, "recentlyClosed"]);
         if (tab.classList.contains("active")) {
             if (tab.nextElementSibling != null) {
@@ -296,16 +325,7 @@ function newTab(url) {
             urlBar.focus();
         }
         try {
-            if (webview.canGoBack() === true) {
-                document.querySelector("#back").classList.add("active");
-            } else {
-                document.querySelector("#back").classList.remove("active");
-            }
-            if (webview.canGoForward() === true) {
-                document.querySelector("#forward").classList.add("active");
-            } else {
-                document.querySelector("#forward").classList.remove("active");
-            }
+            checkCanNavigate(webview);
         } catch (err) {}
         try {
             window.api.send("newSelectedTab", webview.getWebContentsId());
@@ -377,7 +397,6 @@ function newTab(url) {
                         const lastPart = pathname.substring(
                             pathname.lastIndexOf("/") + 1
                         );
-                        console.log(lastPart);
                         window.api.send("downloadExtension", lastPart);
                     }
                 };
@@ -416,16 +435,7 @@ function newTab(url) {
             savedRecommendations,
             "savedRecommendations",
         ]);
-        if (webview.canGoBack() === true) {
-            document.querySelector("#back").classList.add("active");
-        } else {
-            document.querySelector("#back").classList.remove("active");
-        }
-        if (webview.canGoForward() === true) {
-            document.querySelector("#forward").classList.add("active");
-        } else {
-            document.querySelector("#forward").classList.remove("active");
-        }
+        checkCanNavigate(webview);
     });
 
     webview.addEventListener("did-stop-loading", function () {
@@ -442,7 +452,7 @@ function newTab(url) {
                 hoverLink.style.maxWidth = window.innerWidth - 35 + "px";
             }
             hoverLink.style.display = "flex";
-            hoverLink.textContent = event.url;
+            hoverLink.querySelector("p").textContent = event.url;
         }
     });
 
@@ -490,6 +500,13 @@ function newTab(url) {
                 .then((biggestImageUrl) => {
                     webview.setAttribute("data-favicon", biggestImageUrl);
                     updateFavicon();
+                    let favicon = webview.dataset.favicon;
+                    let title = webview.getTitle();
+                    let url = webview.getURL();
+                    let time = new Date().getTime();
+                    history.unshift({ favicon, title, url, time });
+                    window.api.send("writeFile", [history, "history"]);
+                    reloadHistory();
                 })
                 .catch((error) => {
                     console.error("Error:", error);
@@ -498,6 +515,11 @@ function newTab(url) {
     });
     tabCounter++;
 }
+
+document.querySelector("#sidebarToggle").onclick = function (e) {
+    e.target.classList.toggle("open");
+    document.querySelector("html").toggleAttribute("data-sidebarOpen");
+};
 
 document.querySelector("#back").onclick = function (e) {
     if (e.target.classList.contains("active"))
@@ -509,8 +531,119 @@ document.querySelector("#forward").onclick = function (e) {
         document.querySelector("webview.active").goForward();
 };
 
-document.querySelector("#reload").onclick = function (e) {
+document.querySelector("#reload").onclick = function () {
     document.querySelector("webview.active").reload();
+};
+
+function reloadHistory() {
+    let historyPage = document.querySelector("#sidebar > .history");
+    historyPage.innerHTML = "";
+
+    let h2 = document.createElement("h2");
+    h2.innerText = "History";
+    historyPage.appendChild(h2);
+
+    let p = document.createElement("p");
+    p.innerText = "􀆉";
+    h2.insertBefore(p, h2.firstChild);
+
+    p.onclick = function () {
+        let homePage = document.querySelector("#sidebar > .home");
+        let historyPage = document.querySelector("#sidebar > .history");
+        homePage.style.display = "block";
+        historyPage.style.scale = 1.01;
+        historyPage.style.opacity = 0;
+        setTimeout(() => {
+            historyPage.style.scale = "";
+            historyPage.style.opacity = "";
+            historyPage.style.display = "none";
+        }, 500);
+    };
+
+    let groupedHistory = {};
+
+    history.forEach((item) => {
+        let date = new Date(item.time);
+        date = date.toDateString();
+        if (!groupedHistory[date]) {
+            groupedHistory[date] = [];
+        }
+        const existingIndex = groupedHistory[date].findIndex(
+            (existingItem) => existingItem.url === item.url
+        );
+        if (existingIndex !== -1) {
+            groupedHistory[date][existingIndex] = item;
+        } else {
+            groupedHistory[date].push(item);
+        }
+    });
+
+    const result = [];
+    for (const [date, historyItems] of Object.entries(groupedHistory)) {
+        result.push({ date, history: historyItems });
+    }
+
+    result.forEach((el) => {
+        let collapsible = document.createElement("div");
+        collapsible.classList.add("collapsible");
+        collapsible.textContent = el.date;
+        historyPage.appendChild(collapsible);
+
+        let p = document.createElement("p");
+        p.textContent = "􀆈";
+        collapsible.appendChild(p);
+
+        collapsible.addEventListener("click", function () {
+            let content = this.nextElementSibling;
+            if (window.getComputedStyle(content).display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+            }
+        });
+
+        let content = document.createElement("div");
+        content.classList.add("content");
+        historyPage.appendChild(content);
+
+        el.history.forEach((item) => {
+            let parentDiv = document.createElement("div");
+            content.appendChild(parentDiv);
+
+            let img = document.createElement("img");
+            img.src = item.favicon;
+            parentDiv.appendChild(img);
+
+            let childDiv = document.createElement("div");
+            parentDiv.appendChild(childDiv);
+
+            let p1 = document.createElement("p");
+            p1.textContent = item.title;
+            childDiv.appendChild(p1);
+
+            let p2 = document.createElement("p");
+            p2.textContent = item.url;
+            childDiv.appendChild(p2);
+
+            parentDiv.onclick = function () {
+                goToURL(item.url);
+            };
+        });
+    });
+}
+
+document.querySelector("#openHistory").onclick = function () {
+    reloadHistory();
+    let homePage = document.querySelector("#sidebar > .home");
+    let historyPage = document.querySelector("#sidebar > .history");
+    homePage.style.scale = "0.99";
+    homePage.style.opacity = "0";
+    historyPage.style.display = "block";
+    setTimeout(() => {
+        homePage.style.scale = "";
+        homePage.style.opacity = "";
+        homePage.style.display = "none";
+    }, 500);
 };
 
 window.api.handle(
@@ -629,6 +762,7 @@ window.api.handle(
 
 window.onload = async function () {
     newTab();
+
     savedRecommendations = await window.api.send(
         "readFile",
         "savedRecommendations"
@@ -636,10 +770,17 @@ window.onload = async function () {
     if (savedRecommendations === "") {
         savedRecommendations = [];
     }
+
+    history = await window.api.send("readFile", "history");
+    if (history === "") {
+        history = [];
+    }
+
     recentlyClosed = await window.api.send("readFile", "recentlyClosed");
     if (recentlyClosed === "") {
         recentlyClosed = [];
     }
+
     preferences = await window.api.send("readFile", "preferences");
     if (preferences === "") {
         preferences = {};

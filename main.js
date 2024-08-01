@@ -3,7 +3,6 @@ const fs = require("fs").promises;
 const path = require("node:path");
 const { MicaBrowserWindow, IS_WINDOWS_11 } = require("mica-electron");
 const { ElectronBlocker } = require("@cliqz/adblocker-electron");
-const { fetch } = require("cross-fetch");
 const { ElectronChromeExtensions } = require("electron-chrome-extensions");
 const { buildChromeContextMenu } = require("electron-chrome-context-menu");
 const crx = require("crx-util");
@@ -27,6 +26,8 @@ async function createWindow() {
         },
     });
 
+    // mainWindow.setBackgroundMaterial("acrylic");
+
     const extensions = new ElectronChromeExtensions({
         session: mainWindow.webContents.session,
         async createTab(details) {
@@ -43,12 +44,14 @@ async function createWindow() {
         },
     });
 
-    // ElectronBlocker.fromPrebuiltAdsAndTracking(fetch).then((blocker) => {
-    //     blocker.enableBlockingInSession(mainWindow.webContents.session);
-    // });
+    ElectronBlocker.fromPrebuiltAdsAndTracking(fetch).then((blocker) => {
+        blocker.enableBlockingInSession(mainWindow.webContents.session);
+    });
 
     if (IS_WINDOWS_11) {
         mainWindow.setMicaAcrylicEffect();
+    } else if (process.platform !== "darwin") {
+        mainWindow.setAcrylic();
     }
 
     const manifestExists = async (dirPath) => {
@@ -96,7 +99,7 @@ async function createWindow() {
         for (const extPath of extensionDirectories.filter(Boolean)) {
             console.log(`Loading extension from ${extPath}`);
             try {
-                const extensionInfo = void session.loadExtension(extPath);
+                await session.loadExtension(extPath);
                 // results.push(extensionInfo);
             } catch (e) {
                 console.error(e);
@@ -111,8 +114,8 @@ async function createWindow() {
         path.join(__dirname, "./extensions")
     );
 
-    ipcMain.handle("newTab", (args, webContentsId) => {
-        let contents = webContents.fromId(webContentsId);
+    ipcMain.handle("newTab", async (args, webContentsId) => {
+        let contents = await webContents.fromId(webContentsId);
 
         const type = contents.getType();
         const url = contents.getURL();
@@ -126,6 +129,7 @@ async function createWindow() {
         }
 
         contents.on("context-menu", (event, params) => {
+            console.log(params);
             const menu = buildChromeContextMenu({
                 params,
                 contents,
@@ -245,6 +249,20 @@ async function createWindow() {
                     },
                     role: "openRecentlyClosed",
                 },
+                {
+                    accelerator: "CmdOrCtrl+=",
+                    click: () => {
+                        mainWindow.webContents.send("zoomIn");
+                    },
+                    role: "zoomIn",
+                },
+                {
+                    accelerator: "CmdOrCtrl+-",
+                    click: () => {
+                        mainWindow.webContents.send("zoomOut");
+                    },
+                    role: "zoomOut",
+                },
             ],
         },
     ];
@@ -294,9 +312,8 @@ async function createWindow() {
 
     ipcMain.handle("downloadExtension", async (event, args) => {
         try {
-            const dir = `./extensions/${args}`;
+            const dir = `${userDataPath}/extensions/${args}`;
             const crxFilePath = `${dir}.crx`;
-            // await crx.downloadByURL(`${args}`, crxFilePath);
             await crx.downloadById(`${args}`, "chrome", crxFilePath);
             try {
                 await fs.access(dir);
