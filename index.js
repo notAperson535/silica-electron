@@ -625,9 +625,13 @@ function reloadHistory() {
             p2.textContent = item.url;
             childDiv.appendChild(p2);
 
-            parentDiv.onclick = function () {
-                goToURL(item.url);
-            };
+            parentDiv.addEventListener("mouseup", (event) => {
+                if (event.button === 0) {
+                    goToURL(item.url);
+                } else if (event.button === 1) {
+                    newTab(item.url);
+                }
+            });
         });
     });
 }

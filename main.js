@@ -10,21 +10,44 @@ const crx = require("crx-util");
 async function createWindow() {
     await app.whenReady();
 
-    let mainWindow = new MicaBrowserWindow({
-        titleBarStyle: "hidden",
-        // titleBarOverlay: true,
-        transparent: true,
-        frame: false,
-        width: 1000,
-        height: 700,
-        icon: __dirname + "/assets/logo.png",
-        show: false,
-        webPreferences: {
-            webviewTag: true,
-            preload: path.join(__dirname, "preload.js"),
-            sandbox: false,
-        },
-    });
+    let mainWindow;
+
+    if (process.platform === "win32") {
+        mainWindow = new MicaBrowserWindow({
+            titleBarStyle: "hidden",
+            transparent: true,
+            frame: false,
+            width: 1000,
+            height: 700,
+            icon: __dirname + "/assets/logo.png",
+            show: false,
+            webPreferences: {
+                webviewTag: true,
+                preload: path.join(__dirname, "preload.js"),
+                sandbox: false,
+            },
+        });
+
+        if (IS_WINDOWS_11) {
+            mainWindow.setMicaAcrylicEffect();
+        } else {
+            mainWindow.setAcrylic();
+        }
+    } else {
+        mainWindow = new BrowserWindow({
+            titleBarStyle: "hidden",
+            frame: false,
+            width: 1000,
+            height: 700,
+            icon: __dirname + "/assets/logo.png",
+            show: false,
+            webPreferences: {
+                webviewTag: true,
+                preload: path.join(__dirname, "preload.js"),
+                sandbox: false,
+            },
+        });
+    }
 
     // mainWindow.setBackgroundMaterial("acrylic");
 
@@ -47,12 +70,6 @@ async function createWindow() {
     ElectronBlocker.fromPrebuiltAdsAndTracking(fetch).then((blocker) => {
         blocker.enableBlockingInSession(mainWindow.webContents.session);
     });
-
-    if (IS_WINDOWS_11) {
-        mainWindow.setMicaAcrylicEffect();
-    } else if (process.platform !== "darwin") {
-        mainWindow.setAcrylic();
-    }
 
     const manifestExists = async (dirPath) => {
         if (!dirPath) return false;
