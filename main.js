@@ -10,48 +10,27 @@ const crx = require("crx-util");
 async function createWindow() {
     await app.whenReady();
 
-    let mainWindow;
+    let mainWindow = new BrowserWindow({
+        titleBarStyle: "hidden",
+        titleBarOverlay: true,
+        backgroundMaterial: "acrylic",
+        vibrancy: "window",
+        width: 1000,
+        height: 700,
+        icon: __dirname + "/assets/logo.png",
+        show: false,
+        webPreferences: {
+            webviewTag: true,
+            preload: path.join(__dirname, "preload.js"),
+            sandbox: false,
+        },
+    });
 
-    if (process.platform === "win32") {
-        mainWindow = new MicaBrowserWindow({
-            titleBarStyle: "hidden",
-            transparent: true,
-            frame: false,
-            width: 1000,
-            height: 700,
-            icon: __dirname + "/assets/logo.png",
-            show: false,
-            webPreferences: {
-                webviewTag: true,
-                preload: path.join(__dirname, "preload.js"),
-                sandbox: false,
-            },
-        });
-
-        if (IS_WINDOWS_11) {
-            mainWindow.setMicaAcrylicEffect();
-        } else {
-            mainWindow.setAcrylic();
-        }
-    } else {
-        mainWindow = new BrowserWindow({
-            titleBarStyle: "hidden",
-            frame: false,
-            width: 1000,
-            height: 700,
-            icon: __dirname + "/assets/logo.png",
-            transparent: true,
-            vibrancy: "fullscreen-ui",
-            show: false,
-            webPreferences: {
-                webviewTag: true,
-                preload: path.join(__dirname, "preload.js"),
-                sandbox: false,
-            },
-        });
-    }
-
-    // mainWindow.setBackgroundMaterial("acrylic");
+    // if (IS_WINDOWS_11) {
+    //     mainWindow.setMicaAcrylicEffect();
+    // } else {
+    //     mainWindow.setAcrylic();
+    // }
 
     const extensions = new ElectronChromeExtensions({
         session: mainWindow.webContents.session,
@@ -174,7 +153,6 @@ async function createWindow() {
     });
 
     if (process.platform === "darwin") {
-        mainWindow.setVibrancy("window");
         app.dock.setIcon(path.join(__dirname, "/assets/logo.png"));
     }
 
