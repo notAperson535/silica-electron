@@ -40,6 +40,8 @@ async function createWindow() {
             width: 1000,
             height: 700,
             icon: __dirname + "/assets/logo.png",
+            transparent: true,
+            vibrancy: "fullscreen-ui",
             show: false,
             webPreferences: {
                 webviewTag: true,
@@ -154,7 +156,7 @@ async function createWindow() {
                     contents,
                     params
                 ),
-                openLink: (url, disposition) => {
+                openLink: (url) => {
                     mainWindow.webContents.send("newTab", url);
                 },
             });

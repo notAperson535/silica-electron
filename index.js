@@ -547,6 +547,13 @@ function reloadHistory() {
     p.innerText = "􀆉";
     h2.insertBefore(p, h2.firstChild);
 
+    let form = document.createElement("form");
+    historyPage.appendChild(form);
+
+    let input = document.createElement("input");
+    input.placeholder = "􀊫 Search History";
+    form.appendChild(input);
+
     p.onclick = function () {
         let homePage = document.querySelector("#sidebar > .home");
         let historyPage = document.querySelector("#sidebar > .history");
@@ -595,10 +602,10 @@ function reloadHistory() {
 
         collapsible.addEventListener("click", function () {
             let content = this.nextElementSibling;
-            if (window.getComputedStyle(content).display === "block") {
-                content.style.display = "none";
+            if (window.getComputedStyle(content).height !== "0px") {
+                content.style.height = 0;
             } else {
-                content.style.display = "block";
+                content.style.height = "auto";
             }
         });
 
