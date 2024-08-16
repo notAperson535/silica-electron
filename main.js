@@ -6,13 +6,14 @@ const { ElectronBlocker } = require("@cliqz/adblocker-electron");
 const { ElectronChromeExtensions } = require("electron-chrome-extensions");
 const { buildChromeContextMenu } = require("electron-chrome-context-menu");
 const crx = require("crx-util");
+const userDataPath = app.getPath("userData");
 
 async function createWindow() {
     await app.whenReady();
 
     let mainWindow = new BrowserWindow({
         titleBarStyle: "hidden",
-        titleBarOverlay: true,
+        // titleBarOverlay: true,
         backgroundMaterial: "acrylic",
         vibrancy: "window",
         width: 1000,
@@ -107,9 +108,15 @@ async function createWindow() {
         return results;
     }
 
+    try{
+        await fs.access(userDataPath+"/extensions");
+    }catch(err){
+        await fs.mkdir(userDataPath+"/extensions");
+    }
+
     await loadExtensions(
         mainWindow.webContents.session,
-        path.join(__dirname, "./extensions")
+        userDataPath+"/extensions"
     );
 
     ipcMain.handle("newTab", async (args, webContentsId) => {
@@ -240,6 +247,13 @@ async function createWindow() {
                     role: "previousTab",
                 },
                 {
+                    accelerator: "CmdOrCtrl+H",
+                    click: () => {
+                        mainWindow.webContents.send("openHistory");
+                    },
+                    role: "openHistory",
+                },
+                {
                     accelerator: "CmdOrCtrl+Shift+T",
                     click: () => {
                         mainWindow.webContents.send("openRecentlyClosed");
@@ -285,8 +299,6 @@ async function createWindow() {
     ipcMain.handle("closeWindow", async () => {
         mainWindow.close();
     });
-
-    const userDataPath = app.getPath("userData");
 
     ipcMain.handle("writeFile", async (event, args) => {
         await writeFile(

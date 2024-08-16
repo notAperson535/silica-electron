@@ -535,37 +535,32 @@ document.querySelector("#reload").onclick = function () {
     document.querySelector("webview.active").reload();
 };
 
-function reloadHistory() {
+document.querySelector("#openHistory").onclick = function () {
+    openHistory();
+};
+
+function openHistory() {
+    reloadHistory();
+    let homePage = document.querySelector("#sidebar > .home");
     let historyPage = document.querySelector("#sidebar > .history");
-    historyPage.innerHTML = "";
+    homePage.style.scale = "0.99";
+    homePage.style.opacity = "0";
+    historyPage.style.display = "block";
+    setTimeout(() => {
+        homePage.style.scale = "";
+        homePage.style.opacity = "";
+        homePage.style.display = "none";
+    }, 500);
+}
 
-    let h2 = document.createElement("h2");
-    h2.innerText = "History";
-    historyPage.appendChild(h2);
-
-    let p = document.createElement("p");
-    p.innerText = "􀆉";
-    h2.insertBefore(p, h2.firstChild);
-
-    let form = document.createElement("form");
-    historyPage.appendChild(form);
-
-    let input = document.createElement("input");
-    input.placeholder = "􀊫 Search History";
-    form.appendChild(input);
-
-    p.onclick = function () {
-        let homePage = document.querySelector("#sidebar > .home");
-        let historyPage = document.querySelector("#sidebar > .history");
-        homePage.style.display = "block";
-        historyPage.style.scale = 1.01;
-        historyPage.style.opacity = 0;
-        setTimeout(() => {
-            historyPage.style.scale = "";
-            historyPage.style.opacity = "";
-            historyPage.style.display = "none";
-        }, 500);
-    };
+function reloadHistory(term) {
+    let historyPage = document.querySelector("#sidebar > .history");
+    document
+        .querySelectorAll(".history > .collapsible")
+        .forEach((el) => el.remove());
+    document
+        .querySelectorAll(".history > .content")
+        .forEach((el) => el.remove());
 
     let groupedHistory = {};
 
@@ -589,6 +584,8 @@ function reloadHistory() {
     for (const [date, historyItems] of Object.entries(groupedHistory)) {
         result.push({ date, history: historyItems });
     }
+
+    console.log(JSON.stringify(result));
 
     result.forEach((el) => {
         let collapsible = document.createElement("div");
@@ -614,48 +611,92 @@ function reloadHistory() {
         historyPage.appendChild(content);
 
         el.history.forEach((item) => {
-            let parentDiv = document.createElement("div");
-            content.appendChild(parentDiv);
+            if (
+                term === undefined ||
+                item.title.toLowerCase().includes(term) ||
+                item.url.toLowerCase().includes(term)
+            ) {
+                let parentDiv = document.createElement("div");
+                content.appendChild(parentDiv);
 
-            let img = document.createElement("img");
-            img.src = item.favicon;
-            parentDiv.appendChild(img);
+                let img = document.createElement("img");
+                img.src = item.favicon;
+                parentDiv.appendChild(img);
 
-            let childDiv = document.createElement("div");
-            parentDiv.appendChild(childDiv);
+                let childDiv = document.createElement("div");
+                parentDiv.appendChild(childDiv);
 
-            let p1 = document.createElement("p");
-            p1.textContent = item.title;
-            childDiv.appendChild(p1);
+                let p1 = document.createElement("p");
+                p1.textContent = item.title;
+                childDiv.appendChild(p1);
 
-            let p2 = document.createElement("p");
-            p2.textContent = item.url;
-            childDiv.appendChild(p2);
+                let p2 = document.createElement("p");
+                p2.textContent = item.url;
+                childDiv.appendChild(p2);
 
-            parentDiv.addEventListener("mouseup", (event) => {
-                if (event.button === 0) {
-                    goToURL(item.url);
-                } else if (event.button === 1) {
-                    newTab(item.url);
-                }
-            });
+                parentDiv.addEventListener("mouseup", (event) => {
+                    if (event.button === 0) {
+                        goToURL(item.url);
+                    } else if (event.button === 1) {
+                        newTab(item.url);
+                    }
+                });
+            }
         });
+
+        if (content.innerHTML === "") {
+            collapsible.remove();
+            content.remove();
+        }
     });
 }
 
-document.querySelector("#openHistory").onclick = function () {
-    reloadHistory();
+document.querySelector(".history input").onkeyup = function (event) {
+    reloadHistory(document.querySelector(".history input").value);
+};
+
+// close history panel button
+document.querySelector(".history > h2 > p").onclick = function () {
     let homePage = document.querySelector("#sidebar > .home");
     let historyPage = document.querySelector("#sidebar > .history");
-    homePage.style.scale = "0.99";
-    homePage.style.opacity = "0";
-    historyPage.style.display = "block";
+    homePage.style.display = "block";
+    historyPage.style.scale = 1.01;
+    historyPage.style.opacity = 0;
     setTimeout(() => {
-        homePage.style.scale = "";
-        homePage.style.opacity = "";
-        homePage.style.display = "none";
+        historyPage.style.scale = "";
+        historyPage.style.opacity = "";
+        historyPage.style.display = "none";
     }, 500);
 };
+
+window.api.handle(
+    "openHistory",
+    () =>
+        function () {
+            let historyPage = document.querySelector("#sidebar > .history");
+            let homePage = document.querySelector("#sidebar > .home");
+            let sidebarToggle = document.querySelector("#sidebarToggle");
+
+            if (
+                sidebarToggle.classList.contains("open") &&
+                historyPage.style.display === "block"
+            ) {
+                sidebarToggle.classList.remove("open");
+                document
+                    .querySelector("html")
+                    .removeAttribute("data-sidebarOpen");
+            } else {
+                sidebarToggle.classList.add("open");
+                document
+                    .querySelector("html")
+                    .setAttribute("data-sidebarOpen", "");
+            }
+
+            if (historyPage.style.display !== "block") {
+                openHistory();
+            }
+        }
+);
 
 window.api.handle(
     "newPopup",
