@@ -108,15 +108,15 @@ async function createWindow() {
         return results;
     }
 
-    try{
-        await fs.access(userDataPath+"/extensions");
-    }catch(err){
-        await fs.mkdir(userDataPath+"/extensions");
+    try {
+        await fs.access(userDataPath + "/extensions");
+    } catch (err) {
+        await fs.mkdir(userDataPath + "/extensions");
     }
 
     await loadExtensions(
         mainWindow.webContents.session,
-        userDataPath+"/extensions"
+        userDataPath + "/extensions"
     );
 
     ipcMain.handle("newTab", async (args, webContentsId) => {
@@ -172,8 +172,16 @@ async function createWindow() {
 
     mainWindow.webContents.on("did-attach-webview", (_, contents) => {
         contents.setWindowOpenHandler((details) => {
-            mainWindow.webContents.send("newTab", details.url);
-            return { action: "deny" };
+            if (
+                !details.url.includes("accounts.google.com") &&
+                !details.url.includes("appleid.apple.com") &&
+                !details.url.includes("login.live.com")
+            ) {
+                mainWindow.webContents.send("newTab", details.url);
+                return { action: "deny" };
+            } else {
+                return { action: "allow" };
+            }
         });
     });
 
