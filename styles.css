@@ -313,6 +313,7 @@ form > input::placeholder {
     padding: 10px;
     transition: 0.5s;
     animation: fadeInZoomIn 0.5s;
+    overflow: auto;
 }
 
 #sidebar > div:not(.home) {
@@ -422,10 +423,6 @@ form > input::placeholder {
     overflow: hidden;
     border-radius: 15px;
     box-sizing: border-box;
-}
-
-#sidebar > div > .content ~ .content {
-    height: 0;
 }
 
 #sidebar > div > .content > div {
